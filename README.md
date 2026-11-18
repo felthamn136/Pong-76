@@ -47,9 +47,10 @@ normally.
 The selected colour applies to gameplay, while scanlines stay behind the
 content on all screens. Paddles and the ball scale with the window. A match is
 won when a player reaches at least 11 points with a two-point lead. Autoserve
-defaults to “No”, which waits for Space or the on-screen serve button; “Yes”
-launches automatically at the start and after points. Press Escape to return
-to setup or Enter after a win to start a new match.
+defaults to “No”, which waits for Space or the controller's South button
+(A/X); “Yes” launches automatically at the start and after points. Use the
+Pause/Resume button to stop or continue a match. Press Escape to return to
+setup or Enter after a win to start a new match.
 
 Sound effects use synthesized tones: 480 Hz for 50 ms on paddle hits, 240 Hz
 for 50 ms on wall bounces, and 240 Hz for 250 ms when a point is scored. If
@@ -68,3 +69,45 @@ cargo run
 ```
 
 Run the game-logic tests with `cargo test`.
+
+## Linux AppImage
+
+The x86_64 AppImage is available at
+[dist/Pong-76-x86_64.AppImage](./dist/Pong-76-x86_64.AppImage). To rebuild it,
+install `appimagetool` and run:
+
+```bash
+APPIMAGETOOL=/path/to/appimagetool packaging/linux/build-appimage.sh
+```
+
+## Linux Snap
+
+The amd64 Snap package is available at
+[dist/pong-76_0.1.0_amd64.snap](./dist/pong-76_0.1.0_amd64.snap). To rebuild
+it, run:
+
+```bash
+packaging/snap/build-snap.sh
+```
+
+Install the local package with:
+
+```bash
+sudo snap install --dangerous dist/pong-76_0.1.0_amd64.snap
+```
+
+## Linux Flatpak
+
+The x86_64 Flatpak bundle is available at
+[dist/Pong-76.flatpak](./dist/Pong-76.flatpak). To rebuild it, install Cargo,
+the Flatpak CLI, and the Freedesktop Platform 26.08 runtime, then run:
+
+```bash
+packaging/flatpak/build-flatpak.sh
+```
+
+Install the local bundle with:
+
+```bash
+flatpak install --user dist/Pong-76.flatpak
+```

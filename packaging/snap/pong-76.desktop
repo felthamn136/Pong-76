@@ -1,0 +1,8 @@
+[Desktop Entry]
+Name=Pong '76
+Comment=Retro arcade Pong game
+Exec=pong-76
+Icon=${SNAP}/meta/gui/pong76.png
+Terminal=false
+Type=Application
+Categories=Game;ArcadeGame;

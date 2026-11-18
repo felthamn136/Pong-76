@@ -1,0 +1,20 @@
+name: pong-76
+version: '0.1.0'
+summary: Retro arcade Pong game
+description: |
+  Pong '76 is a retro arcade game with keyboard and joystick controls.
+base: core26
+confinement: strict
+grade: stable
+
+apps:
+  pong-76:
+    command: bin/pong76
+    plugs:
+      - audio-playback
+      - desktop
+      - desktop-legacy
+      - joystick
+      - opengl
+      - wayland
+      - x11

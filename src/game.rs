@@ -88,7 +88,7 @@ impl Court {
             paddle_height: (if settings.paddle_size == PaddleSize::Small {
                 72.0
             } else {
-                120.0
+                110.0
             }) * scale,
             ball_radius: 6.0 * scale,
             paddle_speed: 420.0 * height / 600.0,
@@ -108,6 +108,7 @@ pub struct Game {
     pub left_score: u32,
     pub right_score: u32,
     pub game_over: bool,
+    paused: bool,
     pub winner: String,
     waiting_to_serve: bool,
     serve_direction: f32,
@@ -131,6 +132,7 @@ impl Game {
             left_score: 0,
             right_score: 0,
             game_over: false,
+            paused: false,
             winner: String::new(),
             waiting_to_serve: false,
             serve_direction: 1.0,
@@ -143,6 +145,16 @@ impl Game {
 
     pub fn waiting_to_serve(&self) -> bool {
         self.waiting_to_serve
+    }
+
+    pub fn is_paused(&self) -> bool {
+        self.paused
+    }
+
+    pub fn toggle_pause(&mut self) {
+        if !self.game_over {
+            self.paused = !self.paused;
+        }
     }
 
     pub fn serve(&mut self, settings: &Settings) {
@@ -171,6 +183,7 @@ impl Game {
         self.left_score = 0;
         self.right_score = 0;
         self.game_over = false;
+        self.paused = false;
         self.winner.clear();
         self.reset_ball(settings, None);
     }
@@ -183,7 +196,7 @@ impl Game {
         right_input: f32,
     ) -> Vec<SoundEvent> {
         let mut sound_events = Vec::new();
-        if self.game_over {
+        if self.game_over || self.paused {
             return sound_events;
         }
         let dt = dt.clamp(0.0, 0.05);
@@ -385,6 +398,27 @@ mod tests {
         assert!(!game.waiting_to_serve());
         assert!(game.ball_vx.abs() > 0.0);
         assert!(game.serve_remaining > 0.0);
+    }
+
+    #[test]
+    fn pause_freezes_gameplay_until_resumed() {
+        let settings = active_settings();
+        let mut game = Game::new(&settings, 800.0, 600.0);
+        game.serve_remaining = 0.0;
+        let original_ball = (game.ball_x, game.ball_y);
+        let original_paddle = game.left_y;
+
+        game.toggle_pause();
+        assert!(game.is_paused());
+        assert!(game.tick(&settings, 0.05, 1.0, 0.0).is_empty());
+        assert_eq!((game.ball_x, game.ball_y), original_ball);
+        assert_eq!(game.left_y, original_paddle);
+
+        game.toggle_pause();
+        game.tick(&settings, 0.05, 1.0, 0.0);
+        assert!(!game.is_paused());
+        assert_ne!((game.ball_x, game.ball_y), original_ball);
+        assert_ne!(game.left_y, original_paddle);
     }
 
     #[test]

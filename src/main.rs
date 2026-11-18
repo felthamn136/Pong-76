@@ -24,7 +24,7 @@ enum Action {
     Continue,
     Start,
     Setup,
-    Serve,
+    TogglePause,
 }
 
 #[derive(Clone, Copy, Hash)]
@@ -170,13 +170,11 @@ impl PongApp {
                     .map(|id| {
                         let gamepad = manager.gamepad(*id);
                         let stick_y = gamepad.value(gilrs::Axis::LeftStickY);
-                        let dpad_y = f32::from(gamepad.is_pressed(gilrs::Button::DPadDown))
-                            - f32::from(gamepad.is_pressed(gilrs::Button::DPadUp));
-                        let movement = if stick_y.abs() > 0.18 {
-                            stick_y
-                        } else {
-                            dpad_y
-                        };
+                        let movement = gamepad_vertical_input(
+                            stick_y,
+                            gamepad.is_pressed(gilrs::Button::DPadUp),
+                            gamepad.is_pressed(gilrs::Button::DPadDown),
+                        );
                         (movement, gamepad.is_pressed(gilrs::Button::South))
                     })
                     .collect();
@@ -224,6 +222,9 @@ impl PongApp {
             if replay {
                 game.reset_match(&self.settings);
             }
+            return;
+        }
+        if game.is_paused() {
             return;
         }
         if serve {
@@ -343,7 +344,7 @@ impl PongApp {
                 Rect::from_min_size(Pos2::new(left, top), Vec2::new(cell_width, slider_height));
             let selected = self.setting_value(id);
             if let Some(new_value) =
-                draw_setting_slider(ui, slider_rect, id, &setting_choices(id), selected)
+                draw_setting_slider(ui, slider_rect, id, setting_choices(id), selected)
             {
                 self.set_setting(id, new_value);
                 self.notice = None;
@@ -498,20 +499,32 @@ impl PongApp {
                 FontId::proportional((rect.width() * 0.04).max(14.0)),
                 color,
             );
+        } else if game.is_paused() {
+            painter.text(
+                rect.center(),
+                Align2::CENTER_CENTER,
+                "PAUSED",
+                FontId::proportional((rect.width() * 0.04).max(14.0)),
+                color,
+            );
+        } else if game.waiting_to_serve() {
+            painter.text(
+                Pos2::new(rect.center().x, rect.top() + rect.height() * 0.78),
+                Align2::CENTER_CENTER,
+                "PRESS SOUTH OR SPACE TO SERVE",
+                FontId::proportional((rect.width() * 0.018).max(10.0)),
+                MUTED,
+            );
         }
 
         let controls_y = rect.top() + rect.height() * 0.95;
         let mut labels = match (self.settings.controls, self.settings.players) {
-            (Controls::Joystick, _) => vec!["JOYSTICK: MOVE"],
+            (Controls::Joystick, _) => Vec::new(),
             (Controls::Keyboard, 2) => vec!["P1: W/S  |  P2: UP/DOWN"],
-            _ => vec!["W/S: MOVE"],
+            _ => Vec::new(),
         };
-        if !self.settings.autoserve && game.waiting_to_serve() && !game.game_over {
-            labels.push(if self.settings.controls == Controls::Joystick {
-                "SOUTH / SPACE: SERVE"
-            } else {
-                "SPACE: SERVE"
-            });
+        if !game.game_over {
+            labels.push(if game.is_paused() { "RESUME" } else { "PAUSE" });
         }
         labels.push("ESC: SETUP");
         let total_width = labels
@@ -540,8 +553,8 @@ impl PongApp {
                 )
                 .clicked()
             {
-                action = if label.starts_with("SPACE") {
-                    Action::Serve
+                action = if label == "PAUSE" || label == "RESUME" {
+                    Action::TogglePause
                 } else if label.starts_with("ESC") {
                     Action::Setup
                 } else {
@@ -632,9 +645,9 @@ impl eframe::App for PongApp {
             }
             Action::Start => self.begin_match(size),
             Action::Setup => self.finish_match(),
-            Action::Serve => {
+            Action::TogglePause => {
                 if let Some(game) = self.game.as_mut() {
-                    game.serve(&self.settings);
+                    game.toggle_pause();
                 }
             }
             Action::None => {}
@@ -825,6 +838,15 @@ fn game_colour(colour: GameColour) -> Color32 {
     Color32::from_rgb(r, g, b)
 }
 
+fn gamepad_vertical_input(stick_y: f32, dpad_up: bool, dpad_down: bool) -> f32 {
+    let stick_y = -stick_y;
+    if stick_y.abs() > 0.18 {
+        stick_y
+    } else {
+        f32::from(dpad_down) - f32::from(dpad_up)
+    }
+}
+
 fn main() -> eframe::Result<()> {
     let options = eframe::NativeOptions {
         viewport: egui::ViewportBuilder::default()
@@ -837,4 +859,17 @@ fn main() -> eframe::Result<()> {
         options,
         Box::new(|creation_context| Ok(Box::new(PongApp::new(&creation_context.egui_ctx)?))),
     )
+}
+
+#[cfg(test)]
+mod joystick_tests {
+    use super::gamepad_vertical_input;
+
+    #[test]
+    fn gamepad_directions_match_game_coordinates() {
+        assert_eq!(gamepad_vertical_input(0.8, false, false), -0.8);
+        assert_eq!(gamepad_vertical_input(-0.8, false, false), 0.8);
+        assert_eq!(gamepad_vertical_input(0.0, true, false), -1.0);
+        assert_eq!(gamepad_vertical_input(0.0, false, true), 1.0);
+    }
 }

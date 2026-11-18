@@ -1,0 +1,8 @@
+[Desktop Entry]
+Name=Pong '76
+Comment=Retro arcade Pong game
+Exec=pong76
+Icon=io.github.felthamn136.Pong76
+Terminal=false
+Type=Application
+Categories=Game;ArcadeGame;
