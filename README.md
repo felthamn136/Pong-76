@@ -1,5 +1,9 @@
 # Pong '76
 
+<p align="center">
+  <img src="assets/pong76-logo.png" alt="Pong '76 logo" width="600">
+</p>
+
 Pong '76 is an experimental Copilot AI-developed game project. Its current
 attraction screen is inspired by the classic *Squash* game found on late-1970s
 Grandstand TV gaming consoles, including the Adman Grandstand 3000 and Video
@@ -7,8 +11,7 @@ Sports Centre 6000 Colour.
 
 ## Attraction screen
 
-The Rust application starts maximized in a normal, resizable window (not
-fullscreen) and provides:
+The Rust application starts in a resizable 800 x 600 window and provides:
 
 - A black background with subtle horizontal scanlines, expanding to the window
   size.
@@ -64,6 +67,4 @@ Install Rust and Cargo, then run the Rust implementation:
 cargo run
 ```
 
-Run the game-logic tests with `cargo test`. The original `pong '76.py` remains
-in the repository as a legacy reference; new development and play should use
-the Rust app.
+Run the game-logic tests with `cargo test`.
