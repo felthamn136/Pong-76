@@ -1,0 +1,1 @@
+Fixed window resize monitoring to maintain aspect ratio of 4:3
