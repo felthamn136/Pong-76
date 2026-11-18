@@ -1,4 +1,4 @@
-# Pong '76
+# Projects Notes
 
 <p align="center">
   <img src="assets/pong76-logo.png" alt="Pong '76 logo" width="600">
