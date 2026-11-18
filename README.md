@@ -111,3 +111,17 @@ Install the local bundle with:
 ```bash
 flatpak install --user dist/Pong-76.flatpak
 ```
+
+## Windows installer
+
+The x86_64 Windows installer is available at
+[dist/Pong-76-Setup.exe](./dist/Pong-76-Setup.exe). To rebuild it on Linux,
+install Rust, the `x86_64-pc-windows-gnu` Rust target, MinGW-w64, and NSIS, then
+run:
+
+```bash
+rustup target add x86_64-pc-windows-gnu
+packaging/windows/build-windows.sh
+```
+
+The installer adds a Start Menu shortcut and an uninstaller.
