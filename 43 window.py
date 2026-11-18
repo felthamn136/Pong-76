@@ -21,7 +21,10 @@ def main_aspect_ratio(event):
     if event.widget  != root:
         return
 
-    correct_height = int (width / apect_ratio)
+    width = event.width
+    height = event.height
+
+    correct_height = int(width / aspect_ratio)
 
     if abs(height - correct_height) > 2:
         resizing = True
