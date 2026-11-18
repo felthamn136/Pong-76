@@ -7,52 +7,63 @@ Sports Centre 6000 Colour.
 
 ## Attraction screen
 
-The Tkinter window currently provides:
+The Rust application starts maximized in a normal, resizable window (not
+fullscreen) and provides:
 
-- An 800×600 starting size with a resizable, 4:3 aspect ratio.
-- A black background with near-black horizontal scanlines, redrawn as the
-  window changes size.
-- A bold, smoothly rendered “PONG '76” logo that follows a shallow curve and
-  scales with the window, positioned slightly higher on the screen.
+- A black background with subtle horizontal scanlines, expanding to the window
+  size.
+- A custom retro-arcade “PONG '76” logo with geometric lettering and a
+  ball-and-paddles emblem, scaled with the window and positioned slightly
+  higher on the screen.
 - Centered introductory text below the logo, with responsive wrapping and
   additional spacing between rows.
 - A “Continue to Game” button that opens the game setup screen.
 
 ## Game setup screen
 
-The setup screen uses a smaller version of the logo and two rows of compact,
-vertical 1970s-console-style sliders for player mode, paddle size, ball angle,
-game speed, scanlines, keyboard or joystick controls, game colour, and
-fullscreen. The ball-angle slider ranges from 20 to 40 degrees; the speed
-slider ranges from slow to fast. Game colour choices are white, green, and
-amber. Scanline and fullscreen settings apply immediately, and the selected
-colour is used for the logo and game objects.
+The setup screen uses a smaller version of the attraction logo and two rows of
+compact, vertical 1970s-console-style sliders for player mode, paddle size,
+ball angle, game speed, scanlines, keyboard or joystick controls, game colour,
+and autoserve. The ball-angle slider offers 20 or 40 degrees; speed ranges from
+slow to fast. Game colour choices are white, green, and amber. Scanlines apply
+to the background on every screen, and the selected colour is used for game
+objects.
 
 ## Gameplay
 
-“Start Game” begins a Pong match on the same resizable 4:3 screen. Small or
+“Start Game” begins a Pong match in the same window. Small or
 large selects paddle height; 20- or 40-degree settings affect serves and
 returns; slow or fast changes ball speed. One-player mode pits the user against
 the computer. Keyboard mode uses W/S for Player 1; the up/down arrows control
-Player 2 in two-player mode. Joystick mode uses each controller's vertical
-axis; connect one controller for one-player mode or two for two-player mode.
-Joystick mode requires the optional Pygame dependency:
+Player 2 in two-player mode. Joystick mode uses each controller's left stick
+or D-pad vertically; the South button (A/X) serves and replays. Connect one
+controller for one-player mode or two for two-player mode. Joystick support is
+built into the game using Gilrs; select JOYSTICK in setup and run the game
+normally.
 
-```bash
-python -m pip install -r requirements-joystick.txt
-```
+The selected colour applies to gameplay, while scanlines stay behind the
+content on all screens. Paddles and the ball scale with the window. A match is
+won when a player reaches at least 11 points with a two-point lead. Autoserve
+defaults to “No”, which waits for Space or the on-screen serve button; “Yes”
+launches automatically at the start and after points. Press Escape to return
+to setup or Enter after a win to start a new match.
 
-The selected scanline, colour, and fullscreen options apply to gameplay. A
-match is won by reaching 11 points with a two-point lead. Press Escape to
-return to setup or Enter after a win to start a new match.
+Sound effects use synthesized tones: 480 Hz for 50 ms on paddle hits, 240 Hz
+for 50 ms on wall bounces, and 240 Hz for 250 ms when a point is scored. If
+audio output is unavailable, the game remains playable and reports the issue
+in the UI and terminal.
 
 The project was created through carefully engineered prompts designed by Neil
 Feltham to explore modern AI-assisted game development.
 
 ## Run
 
-Run the attraction screen with Python 3 and Tkinter installed:
+Install Rust and Cargo, then run the Rust implementation:
 
 ```bash
-python "pong '76.py"
+cargo run
 ```
+
+Run the game-logic tests with `cargo test`. The original `pong '76.py` remains
+in the repository as a legacy reference; new development and play should use
+the Rust app.
