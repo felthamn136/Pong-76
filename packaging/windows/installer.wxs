@@ -1,0 +1,52 @@
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs"
+     xmlns:ui="http://wixtoolset.org/schemas/v4/wxs/ui">
+  <Package Name="Pong '76" Manufacturer="Pong '76" Version="0.1.0"
+           UpgradeCode="C1A09DD8-E640-4AC0-B120-71F810CD9EBA" Scope="perMachine">
+    <MajorUpgrade DowngradeErrorMessage="A newer version of Pong '76 is already installed." />
+    <MediaTemplate EmbedCab="yes" />
+    <Icon Id="PongIcon" SourceFile="$(var.RootDir)/assets/pong76-icon.ico" />
+    <Property Id="ARPPRODUCTICON" Value="PongIcon" />
+    <ui:WixUI Id="WixUI_FeatureTree" />
+    <WixVariable Id="WixUILicenseRtf" Value="$(var.RootDir)/packaging/windows/license.rtf" />
+
+    <StandardDirectory Id="ProgramFiles64Folder">
+      <Directory Id="INSTALLFOLDER" Name="Pong76">
+        <Component Id="GameFiles">
+          <File Id="GameExe" Source="$(var.ExePath)" KeyPath="yes" />
+        </Component>
+        <Component Id="FontLicense">
+          <File Source="$(var.RootDir)/assets/Righteous-OFL.txt" KeyPath="yes" />
+        </Component>
+      </Directory>
+    </StandardDirectory>
+    <StandardDirectory Id="ProgramMenuFolder">
+      <Directory Id="GameMenu" Name="Pong76">
+        <Component Id="MenuShortcut">
+          <Shortcut Id="StartMenuShortcut" Name="Pong '76" Target="[#GameExe]"
+                    WorkingDirectory="INSTALLFOLDER" Icon="PongIcon" />
+          <RemoveFolder Id="RemoveGameMenu" On="uninstall" />
+          <RegistryValue Root="HKLM" Key="Software\Pong76" Name="MenuShortcut"
+                         Type="integer" Value="1" KeyPath="yes" />
+        </Component>
+      </Directory>
+    </StandardDirectory>
+    <StandardDirectory Id="DesktopFolder">
+      <Component Id="DesktopShortcut">
+        <Shortcut Id="GameDesktopShortcut" Name="Pong '76" Target="[#GameExe]"
+                  WorkingDirectory="INSTALLFOLDER" Icon="PongIcon" />
+        <RegistryValue Root="HKLM" Key="Software\Pong76" Name="DesktopShortcut"
+                       Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+    </StandardDirectory>
+
+    <Feature Id="Game" Title="Pong '76" Level="1" AllowAbsent="no">
+      <ComponentRef Id="GameFiles" />
+      <ComponentRef Id="FontLicense" />
+      <ComponentRef Id="MenuShortcut" />
+    </Feature>
+    <Feature Id="Desktop" Title="Desktop shortcut"
+             Description="Add a Pong '76 shortcut to the desktop." Level="2">
+      <ComponentRef Id="DesktopShortcut" />
+    </Feature>
+  </Package>
+</Wix>

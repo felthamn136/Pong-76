@@ -43,7 +43,7 @@ enum SettingId {
 struct PongApp {
     screen: Screen,
     settings: Settings,
-    logo: egui::TextureHandle,
+    settings_banner: egui::TextureHandle,
     switch_plate: egui::TextureHandle,
     switch_lever: egui::TextureHandle,
     game: Option<Game>,
@@ -68,10 +68,10 @@ impl PongApp {
         );
         ctx.set_fonts(fonts);
 
-        let logo = load_texture(
+        let settings_banner = load_texture(
             ctx,
-            "pong76-logo",
-            include_bytes!("../assets/pong76-logo.png"),
+            "pong76-settings-banner",
+            include_bytes!("../assets/pong76-banner-settings.png"),
         )?;
         let switch_plate = load_texture(
             ctx,
@@ -93,7 +93,7 @@ impl PongApp {
         Ok(Self {
             screen: Screen::Setup,
             settings: Settings::default(),
-            logo,
+            settings_banner,
             switch_plate,
             switch_lever,
             game: None,
@@ -108,17 +108,23 @@ impl PongApp {
 }
 
 impl PongApp {
-    fn draw_logo_image(&self, painter: &egui::Painter, rect: Rect, width_scale: f32, y_scale: f32) {
-        let logo_size = self.logo.size_vec2();
-        let logo_width = rect.width() * width_scale;
-        let logo_height = logo_width * logo_size.y / logo_size.x;
-        let logo_rect = Rect::from_center_size(
+    fn draw_settings_banner(
+        &self,
+        painter: &egui::Painter,
+        rect: Rect,
+        width_scale: f32,
+        y_scale: f32,
+    ) {
+        let banner_size = self.settings_banner.size_vec2();
+        let banner_width = rect.width() * width_scale;
+        let banner_height = banner_width * banner_size.y / banner_size.x;
+        let banner_rect = Rect::from_center_size(
             Pos2::new(rect.center().x, rect.top() + rect.height() * y_scale),
-            Vec2::new(logo_width, logo_height),
+            Vec2::new(banner_width, banner_height),
         );
         painter.image(
-            self.logo.id(),
-            logo_rect,
+            self.settings_banner.id(),
+            banner_rect,
             Rect::from_min_max(Pos2::ZERO, Pos2::new(1.0, 1.0)),
             Color32::WHITE,
         );
@@ -278,23 +284,23 @@ impl PongApp {
 
     fn draw_setup(&mut self, ui: &mut egui::Ui, rect: Rect) -> Action {
         let painter = ui.painter().clone();
-        self.draw_logo_image(&painter, rect, 0.22, 0.13);
+        self.draw_settings_banner(&painter, rect, 0.24, 0.10);
         painter.text(
-            Pos2::new(rect.center().x, rect.top() + rect.height() * 0.25),
+            Pos2::new(rect.center().x, rect.top() + rect.height() * 0.235),
             Align2::CENTER_CENTER,
             "GAME SETUP",
             FontId::proportional(24.0),
             CREAM,
         );
 
-        let cell_width = ((rect.width().min(640.0) - 24.0) / 4.0).clamp(84.0, 150.0);
-        let gap = 6.0;
-        let grid_width = cell_width * 4.0 + gap * 3.0;
+        let gap_x = 12.0;
+        let gap_y = 14.0;
+        let grid_width = (rect.width().min(840.0) - 32.0).max(0.0);
+        let cell_width = (grid_width - gap_x * 3.0) / 4.0;
         let grid_left = rect.center().x - grid_width / 2.0;
-        let slider_height = 136.0_f32.min((rect.height() * 0.24).max(96.0));
-        let row_gap = (rect.height() * 0.035).max(8.0);
-        let first_y = rect.top() + rect.height() * 0.32;
-        let second_y = first_y + slider_height + row_gap + 18.0;
+        let grid_top = rect.top() + rect.height() * 0.31;
+        let grid_bottom = rect.top() + rect.height() * 0.81;
+        let card_height = ((grid_bottom - grid_top - gap_y) / 2.0).max(0.0);
 
         let mut action = Action::None;
         for (index, id) in [
@@ -312,18 +318,28 @@ impl PongApp {
         {
             let row = index / 4;
             let column = index % 4;
-            let left = grid_left + column as f32 * (cell_width + gap);
-            let top = if row == 0 { first_y } else { second_y };
+            let left = grid_left + column as f32 * (cell_width + gap_x);
+            let top = grid_top + row as f32 * (card_height + gap_y);
+            let card_rect =
+                Rect::from_min_size(Pos2::new(left, top), Vec2::new(cell_width, card_height));
+            painter.rect_filled(card_rect, 6.0, Color32::from_rgb(43, 29, 22));
+            painter.rect_stroke(
+                card_rect,
+                6.0,
+                Stroke::new(1.0_f32, Color32::from_rgb(91, 69, 45)),
+            );
             let title = setting_title(id);
             painter.text(
-                Pos2::new(left + cell_width / 2.0, top - 8.0),
-                Align2::CENTER_BOTTOM,
+                Pos2::new(card_rect.center().x, top + 14.0),
+                Align2::CENTER_CENTER,
                 title,
                 FontId::new(11.0, egui::FontFamily::Name(SWITCH_FONT.into())),
                 MUTED,
             );
-            let slider_rect =
-                Rect::from_min_size(Pos2::new(left, top), Vec2::new(cell_width, slider_height));
+            let slider_rect = Rect::from_min_max(
+                Pos2::new(left + 4.0, top + 25.0),
+                Pos2::new(left + cell_width - 4.0, top + card_height - 4.0),
+            );
             let selected = self.setting_value(id);
             if let Some(new_value) = draw_setting_slider(
                 ui,
@@ -346,7 +362,7 @@ impl PongApp {
         });
         if let Some(notice) = notice {
             painter.text(
-                Pos2::new(rect.center().x, rect.top() + rect.height() * 0.83),
+                Pos2::new(rect.center().x, rect.top() + rect.height() * 0.855),
                 Align2::CENTER_CENTER,
                 notice,
                 FontId::proportional(14.0),
@@ -354,7 +370,7 @@ impl PongApp {
             );
         }
         let start_rect = Rect::from_center_size(
-            Pos2::new(rect.center().x, rect.top() + rect.height() * 0.91),
+            Pos2::new(rect.center().x, rect.top() + rect.height() * 0.93),
             Vec2::new(170.0, 42.0),
         );
         if ui
@@ -363,6 +379,7 @@ impl PongApp {
                 egui::Button::new(
                     egui::RichText::new("Start Game")
                         .size(14.0)
+                        .family(egui::FontFamily::Name(SWITCH_FONT.into()))
                         .strong()
                         .color(CREAM),
                 )
@@ -390,7 +407,7 @@ impl PongApp {
                 Pos2::new(center_x, rect.top() + rect.height() * 0.12),
                 Align2::CENTER_CENTER,
                 "SOUND OUTPUT UNAVAILABLE",
-                FontId::proportional(12.0 * scale),
+                FontId::new(12.0 * scale, egui::FontFamily::Name(SWITCH_FONT.into())),
                 Color32::from_rgb(255, 120, 100),
             );
         }
@@ -452,7 +469,10 @@ impl PongApp {
         } else {
             "COMPUTER"
         };
-        let score_font = FontId::proportional((rect.width() * 0.0325).max(10.0));
+        let score_font = FontId::new(
+            (rect.width() * 0.0325).max(10.0),
+            egui::FontFamily::Name(SWITCH_FONT.into()),
+        );
         painter.text(
             Pos2::new(
                 rect.left() + rect.width() * 0.25,
@@ -485,7 +505,10 @@ impl PongApp {
                 rect.center(),
                 Align2::CENTER_CENTER,
                 format!("{} WINS\n{replay_prompt}", game.winner),
-                FontId::proportional((rect.width() * 0.04).max(14.0)),
+                FontId::new(
+                    (rect.width() * 0.04).max(14.0),
+                    egui::FontFamily::Name(SWITCH_FONT.into()),
+                ),
                 color,
             );
         } else if game.is_paused() {
@@ -493,7 +516,10 @@ impl PongApp {
                 rect.center(),
                 Align2::CENTER_CENTER,
                 "PAUSED",
-                FontId::proportional((rect.width() * 0.04).max(14.0)),
+                FontId::new(
+                    (rect.width() * 0.04).max(14.0),
+                    egui::FontFamily::Name(SWITCH_FONT.into()),
+                ),
                 color,
             );
         } else if game.waiting_to_serve() {
@@ -501,7 +527,10 @@ impl PongApp {
                 Pos2::new(rect.center().x, rect.top() + rect.height() * 0.78),
                 Align2::CENTER_CENTER,
                 "PRESS SOUTH OR SPACE TO SERVE",
-                FontId::proportional((rect.width() * 0.018).max(10.0)),
+                FontId::new(
+                    (rect.width() * 0.018).max(10.0),
+                    egui::FontFamily::Name(SWITCH_FONT.into()),
+                ),
                 MUTED,
             );
         }
@@ -513,7 +542,11 @@ impl PongApp {
             _ => Vec::new(),
         };
         if !game.game_over {
-            labels.push(if game.is_paused() { "RESUME" } else { "PAUSE" });
+            labels.push(if game.is_paused() {
+                "P:Resume"
+            } else {
+                "P:Pause"
+            });
         }
         labels.push("ESC: SETUP");
         let total_width = labels
@@ -534,6 +567,7 @@ impl PongApp {
                     egui::Button::new(
                         egui::RichText::new(label)
                             .size((rect.width() * 0.014).max(8.0))
+                            .family(egui::FontFamily::Name(SWITCH_FONT.into()))
                             .strong()
                             .color(CREAM),
                     )
@@ -542,7 +576,7 @@ impl PongApp {
                 )
                 .clicked()
             {
-                action = if label == "PAUSE" || label == "RESUME" {
+                action = if label == "P:Pause" || label == "P:Resume" {
                     Action::TogglePause
                 } else if label.starts_with("ESC") {
                     Action::Setup
@@ -806,9 +840,15 @@ fn gamepad_vertical_input(stick_y: f32, dpad_up: bool, dpad_down: bool) -> f32 {
 fn main() -> eframe::Result<()> {
     let icon = eframe::icon_data::from_png_bytes(include_bytes!("../assets/pong76-icon.png"))
         .expect("embedded Pong '76 icon must be a valid PNG");
+    let app_id = if std::env::var_os("SNAP").is_some() {
+        "pong-76"
+    } else {
+        "io.github.felthamn136.Pong76"
+    };
     let options = eframe::NativeOptions {
         viewport: egui::ViewportBuilder::default()
             .with_title("Pong '76")
+            .with_app_id(app_id)
             .with_icon(icon)
             .with_inner_size([960.0, 540.0])
             .with_min_inner_size([640.0, 480.0]),

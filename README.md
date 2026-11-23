@@ -13,10 +13,11 @@ Sports Centre 6000 Colour.
 
 The application starts on the setup screen in a resizable 960 x 540 window
 (minimum 640 x 480).
-The screen has a dark brown background matching the banner, the Pong '76 logo,
-and two rows of compact, bronze-toned metal lever switches
-inspired by 1970s hardware for player mode, paddle size, ball angle, game
-speed, scanlines, keyboard or joystick controls, game colour, and autoserve.
+The screen has a dark brown background matching the banner, a scaled-down copy
+of the Pong '76 banner, and two spaced rows of individually framed, bronze-toned
+metal lever switches inspired by 1970s hardware. The switches configure player
+mode, paddle size, ball angle, game speed, scanlines, keyboard or joystick
+controls, game colour, and autoserve.
 The ball-angle slider offers 20 or 40 degrees; speed ranges from slow to fast.
 Game colour choices are white, green, and amber. Scanlines are not shown on the
 setup screen; the scanlines setting applies to gameplay.
@@ -36,6 +37,10 @@ controller for one-player mode or two for two-player mode. Joystick support is
 built into the game using Gilrs; select JOYSTICK in setup and run the game
 normally.
 
+Moving a paddle as the ball hits it adds slice, and off-center hits add spin.
+The spin curves the ball vertically while keeping it traveling away from the
+paddle that hit it.
+
 The selected colour applies to gameplay, while enabled scanlines stay behind
 the game. The gameplay area scales to fit the window while retaining a 16:9
 aspect ratio, with black bars when needed. Paddles and the ball scale with the
@@ -50,6 +55,16 @@ Sound effects use synthesized tones: 480 Hz for 50 ms on paddle hits, 240 Hz
 for 50 ms on wall bounces, and 240 Hz for 250 ms when a point is scored. If
 audio output is unavailable, the game remains playable and reports the issue
 in the UI and terminal.
+
+## ZX81 version
+
+A numbered Sinclair BASIC listing is available at [ports/zx81/pong76.bas](ports/zx81/pong76.bas).
+The compiled, auto-starting ZX81 image is [ports/zx81/pong76.p](ports/zx81/pong76.p).
+It is intended for a ZX81 with a 16K RAM expansion. Choose either one player
+against the computer or two players; Player 1 uses A/Z and Player 2 uses O/L.
+The program reads the keyboard matrix directly so both paddles can be moved
+independently. Enter the listing, type `RUN`, and save it to tape with
+`SAVE "PONG76"`.
 
 The project was created through carefully engineered prompts designed by Neil
 Feltham to explore modern AI-assisted game development.
@@ -74,7 +89,7 @@ compilation cache error, use a local target directory instead:
 CARGO_TARGET_DIR="$HOME/.cache/pong76-target" cargo run
 ```
 
-Use the same `CARGO_TARGET_DIR` with `cargo test`. The packaging scripts
+Use the same `CARGO_TARGET_DIR` with `cargo test`. The Linux packaging scripts
 expect the default `target` directory and should be run without this setting.
 
 ## Linux AppImage
@@ -119,16 +134,23 @@ Install the local bundle with:
 flatpak install --user dist/Pong-76.flatpak
 ```
 
-## Windows installer
+## Windows installer and portable version
 
-The x86_64 Windows installer is available at
-[dist/Pong-76-Setup.exe](./dist/Pong-76-Setup.exe). To rebuild it on Linux,
-install Rust, the `x86_64-pc-windows-gnu` Rust target, MinGW-w64, and NSIS, then
-run:
+The x86_64 [WiX installer](./dist/Pong-76-Setup.msi) includes a feature
+selection screen where the optional desktop shortcut can be enabled. It
+installs a Start Menu shortcut and can be removed through Windows settings.
+The [portable ZIP](./dist/Pong-76-Portable.zip) can be extracted and run
+without installation.
+
+To rebuild on Linux, install Rust, the `x86_64-pc-windows-gnu` Rust target,
+MinGW-w64, `zip`, Wine, a Windows .NET runtime, and WiX 6 with
+`WixToolset.UI.wixext`. WiX only supports Windows, so run it through Wine:
 
 ```bash
 rustup target add x86_64-pc-windows-gnu
+wix extension add -g WixToolset.UI.wixext/6.0.2
+WIX_WINE_DOTNET=/path/to/windows-dotnet/dotnet.exe \
+WIX_WINE_DLL=/path/to/wix/6.0.2/tools/net6.0/any/wix.dll \
+WIX_UI_EXTENSION=/path/to/WixToolset.UI.wixext.dll \
 packaging/windows/build-windows.sh
 ```
-
-The installer adds a Start Menu shortcut and an uninstaller.

@@ -16,8 +16,9 @@ cargo build --manifest-path "$ROOT/Cargo.toml" --release
 mkdir -p "$APPDIR/usr/bin" "$APPDIR/usr/lib" "$APPDIR/usr/share/doc/pong76" "$ROOT/dist"
 cp "$ROOT/target/release/pong76" "$APPDIR/usr/bin/pong76"
 cp "$SCRIPT_DIR/AppRun" "$APPDIR/AppRun"
-cp "$SCRIPT_DIR/pong76.desktop" "$APPDIR/pong76.desktop"
+cp "$SCRIPT_DIR/pong76.desktop" "$APPDIR/io.github.felthamn136.Pong76.desktop"
 cp "$ROOT/assets/pong76-icon.png" "$APPDIR/pong76.png"
+cp "$ROOT/assets/pong76-icon.png" "$APPDIR/.DirIcon"
 cp "$ROOT/assets/Righteous-OFL.txt" "$APPDIR/usr/share/doc/pong76/Righteous-OFL.txt"
 
 for library in libudev.so.1 libasound.so.2 libgcc_s.so.1; do
@@ -30,7 +31,11 @@ for library in libudev.so.1 libasound.so.2 libgcc_s.so.1; do
 done
 
 chmod a+rx "$APPDIR/AppRun" "$APPDIR/usr/bin/pong76"
-chmod a+r "$APPDIR/pong76.desktop" "$APPDIR/pong76.png" "$APPDIR/usr/lib/"*
+chmod a+r \
+    "$APPDIR/io.github.felthamn136.Pong76.desktop" \
+    "$APPDIR/pong76.png" \
+    "$APPDIR/.DirIcon" \
+    "$APPDIR/usr/lib/"*
 
 ARCH=x86_64 "$APPIMAGETOOL" --no-appstream "$APPDIR" "$OUTPUT"
 printf 'Created %s\n' "$OUTPUT"

@@ -1,5 +1,8 @@
 use rand::Rng;
 
+const SPIN_ACCELERATION: f32 = 0.8;
+const SPIN_DECAY: f32 = 1.1;
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum PaddleSize {
     Small,
@@ -105,6 +108,7 @@ pub struct Game {
     pub ball_y: f32,
     pub ball_vx: f32,
     pub ball_vy: f32,
+    ball_spin: f32,
     pub left_score: u32,
     pub right_score: u32,
     pub game_over: bool,
@@ -129,6 +133,7 @@ impl Game {
             ball_y: height / 2.0,
             ball_vx: 0.0,
             ball_vy: 0.0,
+            ball_spin: 0.0,
             left_score: 0,
             right_score: 0,
             game_over: false,
@@ -203,6 +208,7 @@ impl Game {
         let dt = dt.clamp(0.0, 0.05);
         let court = Court::new(self.width, self.height, settings);
         let half_paddle = court.paddle_height / 2.0;
+        let previous_left_y = self.left_y;
         self.left_y = move_paddle(
             self.left_y,
             left_input,
@@ -211,7 +217,13 @@ impl Game {
             court,
             half_paddle,
         );
+        let left_velocity = if dt > 0.0 {
+            (self.left_y - previous_left_y) / dt
+        } else {
+            0.0
+        };
 
+        let previous_right_y = self.right_y;
         if settings.players == 2 {
             self.right_y = move_paddle(
                 self.right_y,
@@ -232,6 +244,11 @@ impl Game {
             let step = difference.abs().min(court.paddle_speed * 0.78 * dt);
             self.right_y += direction * step;
         }
+        let right_velocity = if dt > 0.0 {
+            (self.right_y - previous_right_y) / dt
+        } else {
+            0.0
+        };
 
         if self.waiting_to_serve {
             return sound_events;
@@ -241,6 +258,8 @@ impl Game {
             return sound_events;
         }
 
+        self.ball_vy += self.ball_spin * self.ball_speed * SPIN_ACCELERATION * dt;
+        self.ball_spin *= (1.0 - SPIN_DECAY * dt).max(0.0);
         self.ball_x += self.ball_vx * dt;
         self.ball_y += self.ball_vy * dt;
         let radius = court.ball_radius;
@@ -261,7 +280,14 @@ impl Game {
             && (self.ball_y - self.left_y).abs() <= half_paddle + radius
         {
             self.ball_x = left_face + radius;
-            self.bounce_from_paddle(1.0, self.left_y, half_paddle, settings);
+            self.bounce_from_paddle(
+                1.0,
+                self.left_y,
+                half_paddle,
+                left_velocity,
+                court.paddle_speed,
+                settings,
+            );
             sound_events.push(SoundEvent::PaddleHit);
         } else if self.ball_vx > 0.0
             && self.ball_x + radius >= court.right_x
@@ -269,7 +295,14 @@ impl Game {
             && (self.ball_y - self.right_y).abs() <= half_paddle + radius
         {
             self.ball_x = court.right_x - radius;
-            self.bounce_from_paddle(-1.0, self.right_y, half_paddle, settings);
+            self.bounce_from_paddle(
+                -1.0,
+                self.right_y,
+                half_paddle,
+                right_velocity,
+                court.paddle_speed,
+                settings,
+            );
             sound_events.push(SoundEvent::PaddleHit);
         }
 
@@ -308,6 +341,7 @@ impl Game {
             direction.unwrap_or_else(|| if rand::thread_rng().gen() { 1.0 } else { -1.0 });
         self.ball_x = self.width / 2.0;
         self.ball_y = self.height / 2.0;
+        self.ball_spin = 0.0;
         self.serve_direction = direction;
         if settings.autoserve {
             self.launch_ball(settings);
@@ -321,6 +355,7 @@ impl Game {
 
     fn launch_ball(&mut self, settings: &Settings) {
         let angle = settings.angle_degrees.to_radians();
+        self.ball_spin = 0.0;
         self.ball_vx = self.serve_direction * self.ball_speed * angle.cos();
         self.ball_vy =
             if rand::thread_rng().gen() { 1.0 } else { -1.0 } * self.ball_speed * angle.sin();
@@ -333,6 +368,8 @@ impl Game {
         direction: f32,
         paddle_y: f32,
         half_paddle: f32,
+        paddle_velocity: f32,
+        paddle_speed: f32,
         settings: &Settings,
     ) {
         let offset = ((self.ball_y - paddle_y) / half_paddle).clamp(-1.0, 1.0);
@@ -340,6 +377,7 @@ impl Game {
         let speed = self.ball_vx.hypot(self.ball_vy);
         self.ball_vx = direction * speed * angle.cos();
         self.ball_vy = if offset >= 0.0 { 1.0 } else { -1.0 } * speed * angle.sin();
+        self.ball_spin = (paddle_velocity / paddle_speed * 0.75 + offset * 0.25).clamp(-1.0, 1.0);
     }
 }
 
@@ -484,6 +522,34 @@ mod tests {
             game.tick(&settings, 0.05, 0.0, 0.0),
             vec![SoundEvent::PaddleHit]
         );
+    }
+
+    #[test]
+    fn paddle_slice_curves_ball_without_reversing_away_direction() {
+        let settings = active_settings();
+        let mut game = Game::new(&settings, 800.0, 600.0);
+        let court = Court::new(game.width, game.height, &settings);
+        game.serve_remaining = 0.0;
+        game.left_y = 300.0;
+        game.ball_x = court.left_x + court.paddle_width + court.ball_radius + 5.0;
+        game.ball_y = game.left_y;
+        game.ball_vx = -200.0;
+        game.ball_vy = 0.0;
+
+        assert_eq!(
+            game.tick(&settings, 0.05, 0.5, 0.0),
+            vec![SoundEvent::PaddleHit]
+        );
+        assert!(game.ball_vx > 0.0);
+        assert!(game.ball_spin > 0.0);
+
+        let incoming_vertical_speed = game.ball_vy;
+        game.tick(&settings, 0.05, 0.0, 0.0);
+        assert!(game.ball_vy > incoming_vertical_speed);
+        for _ in 0..4 {
+            game.tick(&settings, 0.05, 0.0, 0.0);
+            assert!(game.ball_vx > 0.0);
+        }
     }
 
     #[test]
