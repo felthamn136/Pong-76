@@ -60,11 +60,24 @@ in the UI and terminal.
 
 A numbered Sinclair BASIC listing is available at [ports/zx81/pong76.bas](ports/zx81/pong76.bas).
 The compiled, auto-starting ZX81 image is [ports/zx81/pong76.p](ports/zx81/pong76.p).
-It is intended for a ZX81 with a 16K RAM expansion. Choose either one player
-against the computer or two players; Player 1 uses A/Z and Player 2 uses O/L.
+It is intended for a ZX81 with a 16K RAM expansion. Enter `1` or `2` and press
+Enter to choose one player against the computer or two players. Player 1 uses
+A/Z and Player 2 uses O/L. The paddles, ball, and walls use ZX81 block graphics.
 The program reads the keyboard matrix directly so both paddles can be moved
-independently. Enter the listing, type `RUN`, and save it to tape with
-`SAVE "PONG76"`.
+independently. First to 11 points with a two-point lead wins; type `RUN` to play
+again.
+
+The `.p` image starts automatically when loaded. Alternatively, enter the
+listing and type `RUN`; save it to tape with `SAVE "PONG76"`. Line 1 reserves
+space for the keyboard-reading machine code initialized by lines 2–11: keep
+the nine characters after `REM` intact when entering the listing.
+
+To rebuild the image from the listing, use
+[zmakebas with ZX81 support](https://github.com/ryangray/zmakebas):
+
+```bash
+zmakebas -p -a 2 -o ports/zx81/pong76.p ports/zx81/pong76.bas
+```
 
 The project was created through carefully engineered prompts designed by Neil
 Feltham to explore modern AI-assisted game development.
