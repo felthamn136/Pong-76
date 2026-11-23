@@ -8,14 +8,14 @@ use eframe::egui::{self, Align2, Color32, Context, FontId, Id, Pos2, Rect, Sense
 use game::{Controls, Court, Game, GameColour, PaddleSize, Settings, SoundEvent};
 use std::time::Duration;
 
-const DESCRIPTION: &str = "This experimental Copilot AI-developed game is inspired by the classic Squash game found on late-1970s Grandstand TV gaming consoles, including the Adman Grandstand 3000 and Video Sports Centre 6000 Colour. The project was created through a series of carefully engineered prompts designed by Neil Feltham to explore the capabilities of modern AI-assisted game development.";
 const BLACK: Color32 = Color32::BLACK;
+const SETUP_BACKGROUND: Color32 = Color32::from_rgb(30, 16, 12);
 const CREAM: Color32 = Color32::from_rgb(244, 232, 193);
 const MUTED: Color32 = Color32::from_rgb(208, 208, 208);
+const SWITCH_FONT: &str = "righteous";
 
 #[derive(Clone, Copy, PartialEq, Eq)]
 enum Screen {
-    Attraction,
     Setup,
     Game,
 }
@@ -23,7 +23,6 @@ enum Screen {
 #[derive(Clone, Copy)]
 enum Action {
     None,
-    Continue,
     Start,
     Setup,
     TogglePause,
@@ -45,6 +44,8 @@ struct PongApp {
     screen: Screen,
     settings: Settings,
     logo: egui::TextureHandle,
+    switch_plate: egui::TextureHandle,
+    switch_lever: egui::TextureHandle,
     game: Option<Game>,
     notice: Option<String>,
     audio: Option<Audio>,
@@ -56,11 +57,32 @@ struct PongApp {
 
 impl PongApp {
     fn new(ctx: &Context) -> Result<Self, Box<dyn std::error::Error + Send + Sync>> {
-        let image = image::load_from_memory(include_bytes!("../assets/pong76-logo.png"))?;
-        let rgba = image.to_rgba8();
-        let size = [rgba.width() as usize, rgba.height() as usize];
-        let logo_image = egui::ColorImage::from_rgba_unmultiplied(size, rgba.as_raw());
-        let logo = ctx.load_texture("pong76-logo", logo_image, egui::TextureOptions::LINEAR);
+        let mut fonts = egui::FontDefinitions::default();
+        fonts.font_data.insert(
+            SWITCH_FONT.to_owned(),
+            egui::FontData::from_static(include_bytes!("../assets/Righteous-Regular.ttf")),
+        );
+        fonts.families.insert(
+            egui::FontFamily::Name(SWITCH_FONT.into()),
+            vec![SWITCH_FONT.to_owned()],
+        );
+        ctx.set_fonts(fonts);
+
+        let logo = load_texture(
+            ctx,
+            "pong76-logo",
+            include_bytes!("../assets/pong76-logo.png"),
+        )?;
+        let switch_plate = load_texture(
+            ctx,
+            "switch-plate",
+            include_bytes!("../assets/switch-plate.png"),
+        )?;
+        let switch_lever = load_texture(
+            ctx,
+            "switch-lever",
+            include_bytes!("../assets/switch-lever.png"),
+        )?;
         let (audio, audio_error) = match Audio::new() {
             Ok(audio) => (Some(audio), None),
             Err(error) => {
@@ -69,9 +91,11 @@ impl PongApp {
             }
         };
         Ok(Self {
-            screen: Screen::Attraction,
+            screen: Screen::Setup,
             settings: Settings::default(),
             logo,
+            switch_plate,
+            switch_lever,
             game: None,
             notice: None,
             audio,
@@ -252,50 +276,6 @@ impl PongApp {
         }
     }
 
-    fn draw_attraction(&mut self, ui: &mut egui::Ui, rect: Rect) -> Action {
-        let painter = ui.painter().clone();
-        self.draw_logo_image(&painter, rect, 0.52, 0.21);
-
-        let body_font = FontId::proportional((rect.width() * 0.02).max(12.0));
-        let max_width = rect.width() * 0.78;
-        let lines = wrap_text(ui.ctx(), DESCRIPTION, body_font.clone(), max_width);
-        let line_height = body_font.size + (rect.height() * 0.008).max(3.0);
-        let mut y = rect.height() * 0.43;
-        for line in lines {
-            let galley = ui
-                .ctx()
-                .fonts(|fonts| fonts.layout_no_wrap(line, body_font.clone(), MUTED));
-            let pos = Pos2::new(rect.center().x - galley.size().x / 2.0, rect.top() + y);
-            painter.galley(pos, galley, MUTED);
-            y += line_height;
-        }
-
-        let button_size = Vec2::new(220.0, 48.0);
-        let button_y = (y + (rect.height() * 0.03).max(16.0)).min(rect.height() - 72.0);
-        let button_rect = Rect::from_center_size(
-            Pos2::new(rect.center().x, rect.top() + button_y + button_size.y / 2.0),
-            button_size,
-        );
-        if ui
-            .put(
-                button_rect,
-                egui::Button::new(
-                    egui::RichText::new("Continue to Game")
-                        .size(16.0)
-                        .strong()
-                        .color(BLACK),
-                )
-                .fill(CREAM)
-                .stroke(Stroke::NONE),
-            )
-            .clicked()
-        {
-            Action::Continue
-        } else {
-            Action::None
-        }
-    }
-
     fn draw_setup(&mut self, ui: &mut egui::Ui, rect: Rect) -> Action {
         let painter = ui.painter().clone();
         self.draw_logo_image(&painter, rect, 0.22, 0.13);
@@ -339,15 +319,21 @@ impl PongApp {
                 Pos2::new(left + cell_width / 2.0, top - 8.0),
                 Align2::CENTER_BOTTOM,
                 title,
-                FontId::proportional(11.0),
+                FontId::new(11.0, egui::FontFamily::Name(SWITCH_FONT.into())),
                 MUTED,
             );
             let slider_rect =
                 Rect::from_min_size(Pos2::new(left, top), Vec2::new(cell_width, slider_height));
             let selected = self.setting_value(id);
-            if let Some(new_value) =
-                draw_setting_slider(ui, slider_rect, id, setting_choices(id), selected)
-            {
+            if let Some(new_value) = draw_setting_slider(
+                ui,
+                slider_rect,
+                id,
+                setting_choices(id),
+                selected,
+                &self.switch_plate,
+                &self.switch_lever,
+            ) {
                 self.set_setting(id, new_value);
                 self.notice = None;
             }
@@ -625,26 +611,26 @@ impl eframe::App for PongApp {
         }
 
         let mut action = Action::None;
+        let background = if self.screen == Screen::Setup {
+            SETUP_BACKGROUND
+        } else {
+            BLACK
+        };
         egui::CentralPanel::default()
-            .frame(egui::Frame::none().fill(BLACK))
+            .frame(egui::Frame::none().fill(background))
             .show(ctx, |ui| {
                 let rect = ui.max_rect();
-                ui.painter().rect_filled(rect, 0.0, BLACK);
-                if self.settings.scanlines {
+                ui.painter().rect_filled(rect, 0.0, background);
+                if self.screen == Screen::Game && self.settings.scanlines {
                     draw_scanlines(ui.painter(), rect, ui.ctx().pixels_per_point());
                 }
                 action = match self.screen {
-                    Screen::Attraction => self.draw_attraction(ui, rect),
                     Screen::Setup => self.draw_setup(ui, rect),
                     Screen::Game => self.draw_game(ui, rect),
                 };
             });
 
         match action {
-            Action::Continue => {
-                self.screen = Screen::Setup;
-                self.notice = None;
-            }
             Action::Start => self.begin_match(size),
             Action::Setup => self.finish_match(),
             Action::TogglePause => {
@@ -687,40 +673,39 @@ fn setting_choices(id: SettingId) -> &'static [&'static str] {
     }
 }
 
+fn load_texture(
+    ctx: &Context,
+    name: &str,
+    bytes: &[u8],
+) -> Result<egui::TextureHandle, image::ImageError> {
+    let rgba = image::load_from_memory(bytes)?.to_rgba8();
+    let size = [rgba.width() as usize, rgba.height() as usize];
+    let image = egui::ColorImage::from_rgba_unmultiplied(size, rgba.as_raw());
+    Ok(ctx.load_texture(name, image, egui::TextureOptions::LINEAR))
+}
+
 fn draw_setting_slider(
     ui: &mut egui::Ui,
     rect: Rect,
     id: SettingId,
     choices: &[&str],
     selected: usize,
+    plate_texture: &egui::TextureHandle,
+    lever_texture: &egui::TextureHandle,
 ) -> Option<usize> {
     let response = ui.interact(rect, Id::new(("setting", id)), Sense::click_and_drag());
     let painter = ui.painter();
-    painter.rect_filled(rect, 0.0, Color32::from_rgb(33, 26, 18));
-    painter.rect_stroke(
-        rect,
-        0.0,
-        Stroke::new(2.0_f32, Color32::from_rgb(162, 122, 69)),
-    );
-
     let scale = rect.height() / 136.0;
-    let track_top = rect.top() + 42.0 * scale;
-    let track_bottom = rect.top() + 92.0 * scale;
-    let track_x = rect.center().x;
-    painter.line_segment(
-        [
-            Pos2::new(track_x, track_top),
-            Pos2::new(track_x, track_bottom),
-        ],
-        Stroke::new(18.0 * scale, Color32::from_rgb(112, 83, 47)),
+    let plate_height = 96.0 * scale;
+    let plate_rect = Rect::from_center_size(
+        rect.center(),
+        Vec2::new(plate_height * 365.0 / 978.0, plate_height),
     );
-    painter.line_segment(
-        [
-            Pos2::new(track_x, track_top),
-            Pos2::new(track_x, track_bottom),
-        ],
-        Stroke::new(2.0 * scale, Color32::from_rgb(196, 154, 94)),
-    );
+    let lever_size = Vec2::splat(plate_rect.width() * 185.0 / 365.0);
+    let track_top = plate_rect.top() + plate_height * 0.13 + lever_size.y / 2.0;
+    let track_bottom = plate_rect.top() + plate_height * 0.84 - lever_size.y / 2.0;
+    let uv = Rect::from_min_max(Pos2::ZERO, Pos2::new(1.0, 1.0));
+    painter.image(plate_texture.id(), plate_rect, uv, Color32::WHITE);
 
     let positions: Vec<f32> = if choices.len() == 1 {
         vec![track_top]
@@ -732,12 +717,21 @@ fn draw_setting_slider(
             .collect()
     };
     for (index, label) in choices.iter().enumerate() {
-        let y = if index == 0 {
-            rect.top() + 17.0 * scale
+        let (position, align) = if index == 0 {
+            (
+                Pos2::new(rect.center().x, rect.top() + 8.0 * scale),
+                Align2::CENTER_CENTER,
+            )
         } else if index == choices.len() - 1 {
-            rect.bottom() - 17.0 * scale
+            (
+                Pos2::new(rect.center().x, rect.bottom() - 8.0 * scale),
+                Align2::CENTER_CENTER,
+            )
         } else {
-            positions[index]
+            (
+                Pos2::new(plate_rect.left() - 3.0 * scale, positions[index]),
+                Align2::RIGHT_CENTER,
+            )
         };
         let color = if index == selected {
             Color32::from_rgb(255, 225, 163)
@@ -745,39 +739,20 @@ fn draw_setting_slider(
             Color32::from_rgb(156, 135, 96)
         };
         painter.text(
-            Pos2::new(rect.center().x, y),
-            Align2::CENTER_CENTER,
+            position,
+            align,
             *label,
-            FontId::proportional((9.0 * scale).max(7.0)),
+            FontId::new(
+                (9.0 * scale).max(7.0),
+                egui::FontFamily::Name(SWITCH_FONT.into()),
+            ),
             color,
         );
     }
 
     let knob_y = positions[selected.min(positions.len() - 1)];
-    let knob = Rect::from_center_size(
-        Pos2::new(track_x, knob_y),
-        Vec2::new(32.0 * scale, 20.0 * scale),
-    );
-    painter.rect_filled(knob, 0.0, Color32::from_rgb(198, 154, 85));
-    painter.rect_stroke(
-        knob,
-        0.0,
-        Stroke::new(2.0_f32, Color32::from_rgb(255, 224, 160)),
-    );
-    painter.line_segment(
-        [
-            Pos2::new(track_x - 5.0 * scale, knob_y - 6.0 * scale),
-            Pos2::new(track_x - 5.0 * scale, knob_y + 6.0 * scale),
-        ],
-        Stroke::new(2.0_f32, Color32::from_rgb(255, 232, 181)),
-    );
-    painter.line_segment(
-        [
-            Pos2::new(track_x + 5.0 * scale, knob_y - 6.0 * scale),
-            Pos2::new(track_x + 5.0 * scale, knob_y + 6.0 * scale),
-        ],
-        Stroke::new(2.0_f32, Color32::from_rgb(104, 75, 41)),
-    );
+    let knob = Rect::from_center_size(Pos2::new(rect.center().x, knob_y), lever_size);
+    painter.image(lever_texture.id(), knob, uv, Color32::WHITE);
 
     if response.dragged() || response.clicked() {
         if let Some(pos) = response.interact_pointer_pos() {
@@ -790,34 +765,6 @@ fn draw_setting_slider(
         }
     }
     None
-}
-
-fn wrap_text(ctx: &Context, text: &str, font: FontId, max_width: f32) -> Vec<String> {
-    let mut lines = Vec::new();
-    let mut line = String::new();
-    for word in text.split_whitespace() {
-        let candidate = if line.is_empty() {
-            word.to_owned()
-        } else {
-            format!("{line} {word}")
-        };
-        let width = ctx.fonts(|fonts| {
-            fonts
-                .layout_no_wrap(candidate.clone(), font.clone(), MUTED)
-                .size()
-                .x
-        });
-        if !line.is_empty() && width > max_width {
-            lines.push(std::mem::take(&mut line));
-            line.push_str(word);
-        } else {
-            line = candidate;
-        }
-    }
-    if !line.is_empty() {
-        lines.push(line);
-    }
-    lines
 }
 
 fn draw_scanlines(painter: &egui::Painter, rect: Rect, pixels_per_point: f32) {
@@ -850,9 +797,12 @@ fn gamepad_vertical_input(stick_y: f32, dpad_up: bool, dpad_down: bool) -> f32 {
 }
 
 fn main() -> eframe::Result<()> {
+    let icon = eframe::icon_data::from_png_bytes(include_bytes!("../assets/pong76-icon.png"))
+        .expect("embedded Pong '76 icon must be a valid PNG");
     let options = eframe::NativeOptions {
         viewport: egui::ViewportBuilder::default()
             .with_title("Pong '76")
+            .with_icon(icon)
             .with_inner_size([800.0, 600.0]),
         ..Default::default()
     };

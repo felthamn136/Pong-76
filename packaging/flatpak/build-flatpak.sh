@@ -30,8 +30,10 @@ flatpak build-init --arch="$ARCH" "$BUILD_DIR" "$APP_ID" "$RUNTIME" "$RUNTIME" "
 install -D -m 0755 "$ROOT/target/release/pong76" "$BUILD_DIR/files/bin/pong76"
 install -D -m 0644 "$SCRIPT_DIR/pong76.desktop" \
     "$BUILD_DIR/files/share/applications/$APP_ID.desktop"
-install -D -m 0644 "$SCRIPT_DIR/pong76.png" \
+install -D -m 0644 "$ROOT/assets/pong76-icon.png" \
     "$BUILD_DIR/files/share/icons/hicolor/512x512/apps/$APP_ID.png"
+install -D -m 0644 "$ROOT/assets/Righteous-OFL.txt" \
+    "$BUILD_DIR/files/share/doc/pong76/Righteous-OFL.txt"
 
 flatpak build-finish \
     --command=pong76 \

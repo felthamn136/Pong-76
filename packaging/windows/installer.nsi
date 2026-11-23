@@ -40,16 +40,18 @@ Section "Pong '76" MainSection
     SetShellVarContext all
     SetOutPath "$INSTDIR"
     File /oname=pong76.exe "${APP_EXE}"
+    File /oname=pong76.ico "assets/pong76-icon.ico"
+    File /oname=Righteous-OFL.txt "assets/Righteous-OFL.txt"
     WriteUninstaller "$INSTDIR\Uninstall.exe"
 
     CreateDirectory "$SMPROGRAMS\Pong '76"
-    CreateShortcut "$SMPROGRAMS\Pong '76\Pong '76.lnk" "$INSTDIR\pong76.exe"
+    CreateShortcut "$SMPROGRAMS\Pong '76\Pong '76.lnk" "$INSTDIR\pong76.exe" "" "$INSTDIR\pong76.ico"
 
     WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Pong76" "DisplayName" "${APP_NAME}"
     WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Pong76" "DisplayVersion" "${APP_VERSION}"
     WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Pong76" "InstallLocation" "$INSTDIR"
     WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Pong76" "UninstallString" '"$INSTDIR\Uninstall.exe"'
-    WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Pong76" "DisplayIcon" "$INSTDIR\pong76.exe"
+    WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Pong76" "DisplayIcon" "$INSTDIR\pong76.ico"
     WriteRegDWORD HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Pong76" "NoModify" 1
     WriteRegDWORD HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Pong76" "NoRepair" 1
 SectionEnd
@@ -60,6 +62,8 @@ Section "Uninstall"
     Delete "$SMPROGRAMS\Pong '76\Pong '76.lnk"
     RMDir "$SMPROGRAMS\Pong '76"
     Delete "$INSTDIR\pong76.exe"
+    Delete "$INSTDIR\pong76.ico"
+    Delete "$INSTDIR\Righteous-OFL.txt"
     Delete "$INSTDIR\Uninstall.exe"
     RMDir "$INSTDIR"
     DeleteRegKey HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Pong76"

@@ -1,36 +1,27 @@
 # Projects Notes
 
 <p align="center">
-  <img src="assets/pong76-logo.png" alt="Pong '76 logo" width="600">
+  <img src="assets/pong76-banner.png" alt="Pong '76 logo on a retro striped background" width="600">
 </p>
 
-Pong '76 is an experimental Copilot AI-developed game project. Its current
-attraction screen is inspired by the classic *Squash* game found on late-1970s
+Pong '76 is an experimental Copilot AI-developed game project inspired by the
+classic *Squash* game found on late-1970s
 Grandstand TV gaming consoles, including the Adman Grandstand 3000 and Video
 Sports Centre 6000 Colour.
 
-## Attraction screen
-
-The Rust application starts in a resizable 800 x 600 window and provides:
-
-- A black background with subtle horizontal scanlines, expanding to the window
-  size.
-- A custom retro-arcade “PONG '76” logo with geometric lettering and a
-  ball-and-paddles emblem, scaled with the window and positioned slightly
-  higher on the screen.
-- Centered introductory text below the logo, with responsive wrapping and
-  additional spacing between rows.
-- A “Continue to Game” button that opens the game setup screen.
-
 ## Game setup screen
 
-The setup screen uses a smaller version of the attraction logo and two rows of
-compact, vertical 1970s-console-style sliders for player mode, paddle size,
-ball angle, game speed, scanlines, keyboard or joystick controls, game colour,
-and autoserve. The ball-angle slider offers 20 or 40 degrees; speed ranges from
-slow to fast. Game colour choices are white, green, and amber. Scanlines apply
-to the background on every screen, and the selected colour is used for game
-objects.
+The application starts on the setup screen in a resizable 800 x 600 window.
+The screen has a dark brown background matching the banner, the Pong '76 logo,
+and two rows of compact, metal lever switches
+inspired by 1970s hardware for player mode, paddle size, ball angle, game
+speed, scanlines, keyboard or joystick controls, game colour, and autoserve.
+The ball-angle slider offers 20 or 40 degrees; speed ranges from slow to fast.
+Game colour choices are white, green, and amber. Scanlines are not shown on the
+setup screen; the scanlines setting applies to gameplay.
+
+Switch labels use the Righteous font by Astigmatic, licensed under the
+[SIL Open Font License](assets/Righteous-OFL.txt).
 
 ## Gameplay
 
@@ -44,9 +35,9 @@ controller for one-player mode or two for two-player mode. Joystick support is
 built into the game using Gilrs; select JOYSTICK in setup and run the game
 normally.
 
-The selected colour applies to gameplay, while scanlines stay behind the
-content on all screens. Paddles and the ball scale with the window. A match is
-won when a player reaches at least 11 points with a two-point lead. Autoserve
+The selected colour applies to gameplay, while enabled scanlines stay behind
+the game. Paddles and the ball scale with the window. A match is won when a
+player reaches at least 11 points with a two-point lead. Autoserve
 defaults to “No”, which waits for Space or the controller's South button
 (A/X); “Yes” launches automatically at the start and after points. Use the
 Pause/Resume button to stop or continue a match. Press Escape to return to
@@ -59,6 +50,9 @@ in the UI and terminal.
 
 The project was created through carefully engineered prompts designed by Neil
 Feltham to explore modern AI-assisted game development.
+
+The rounded arcade-style app icon uses the Pong '76 logo for the game window
+and packaged shortcuts.
 
 ## Run
 

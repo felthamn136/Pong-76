@@ -16,11 +16,13 @@ mkdir -p \
     "$SNAPDIR/bin" \
     "$SNAPDIR/lib/x86_64-linux-gnu" \
     "$SNAPDIR/meta/gui" \
+    "$SNAPDIR/share/doc/pong76" \
     "$OUTPUT"
 cp "$ROOT/target/release/pong76" "$SNAPDIR/bin/pong76"
 cp "$SCRIPT_DIR/snap.yaml" "$SNAPDIR/meta/snap.yaml"
 cp "$SCRIPT_DIR/pong-76.desktop" "$SNAPDIR/meta/gui/pong-76.desktop"
-cp "$ROOT/assets/pong76-logo.png" "$SNAPDIR/meta/gui/pong76.png"
+cp "$ROOT/assets/pong76-icon.png" "$SNAPDIR/meta/gui/pong76.png"
+cp "$ROOT/assets/Righteous-OFL.txt" "$SNAPDIR/share/doc/pong76/Righteous-OFL.txt"
 
 for library in libudev.so.1 libasound.so.2 libgcc_s.so.1; do
     library_path="$(ldconfig -p | awk -v library="$library" '$1 == library && /x86-64/ { print $NF; exit }')"
