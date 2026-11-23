@@ -11,9 +11,10 @@ Sports Centre 6000 Colour.
 
 ## Game setup screen
 
-The application starts on the setup screen in a resizable 800 x 600 window.
+The application starts on the setup screen in a resizable 960 x 540 window
+(minimum 640 x 480).
 The screen has a dark brown background matching the banner, the Pong '76 logo,
-and two rows of compact, metal lever switches
+and two rows of compact, bronze-toned metal lever switches
 inspired by 1970s hardware for player mode, paddle size, ball angle, game
 speed, scanlines, keyboard or joystick controls, game colour, and autoserve.
 The ball-angle slider offers 20 or 40 degrees; speed ranges from slow to fast.
@@ -36,7 +37,9 @@ built into the game using Gilrs; select JOYSTICK in setup and run the game
 normally.
 
 The selected colour applies to gameplay, while enabled scanlines stay behind
-the game. Paddles and the ball scale with the window. A match is won when a
+the game. The gameplay area scales to fit the window while retaining a 16:9
+aspect ratio, with black bars when needed. Paddles and the ball scale with the
+gameplay area. A match is won when a
 player reaches at least 11 points with a two-point lead. Autoserve
 defaults to “No”, which waits for Space or the controller's South button
 (A/X); “Yes” launches automatically at the start and after points. Use the
@@ -63,6 +66,16 @@ cargo run
 ```
 
 Run the game-logic tests with `cargo test`.
+
+If the project is on a network drive and Cargo reports an incremental
+compilation cache error, use a local target directory instead:
+
+```bash
+CARGO_TARGET_DIR="$HOME/.cache/pong76-target" cargo run
+```
+
+Use the same `CARGO_TARGET_DIR` with `cargo test`. The packaging scripts
+expect the default `target` directory and should be run without this setting.
 
 ## Linux AppImage
 

@@ -382,6 +382,7 @@ impl PongApp {
         };
         let painter = ui.painter().clone();
         let court = Court::new(rect.width(), rect.height(), &self.settings);
+        let scale = rect.width() / 800.0;
         let color = game_colour(self.settings.colour);
         let center_x = rect.center().x;
         if self.audio_error.is_some() {
@@ -389,7 +390,7 @@ impl PongApp {
                 Pos2::new(center_x, rect.top() + rect.height() * 0.12),
                 Align2::CENTER_CENTER,
                 "SOUND OUTPUT UNAVAILABLE",
-                FontId::proportional(12.0),
+                FontId::proportional(12.0 * scale),
                 Color32::from_rgb(255, 120, 100),
             );
         }
@@ -401,11 +402,11 @@ impl PongApp {
             painter.line_segment(
                 [
                     Pos2::new(center_x, dash_y),
-                    Pos2::new(center_x, (dash_y + 8.0).min(bottom)),
+                    Pos2::new(center_x, (dash_y + 8.0 * scale).min(bottom)),
                 ],
-                Stroke::new(4.0_f32, Color32::from_rgb(86, 86, 86)),
+                Stroke::new(4.0 * scale, Color32::from_rgb(86, 86, 86)),
             );
-            dash_y += 18.0;
+            dash_y += 18.0 * scale;
         }
 
         let paddle_half = court.paddle_height / 2.0;
@@ -517,15 +518,15 @@ impl PongApp {
         labels.push("ESC: SETUP");
         let total_width = labels
             .iter()
-            .map(|label| label.len() as f32 * (rect.width() * 0.008).max(7.0) + 32.0)
+            .map(|label| (label.len() as f32 * 7.0 + 32.0) * scale)
             .sum::<f32>()
-            + (labels.len().saturating_sub(1) as f32 * 6.0);
+            + (labels.len().saturating_sub(1) as f32 * 6.0 * scale);
         let mut x = center_x - total_width / 2.0;
         for label in labels {
-            let width = label.len() as f32 * (rect.width() * 0.008).max(7.0) + 32.0;
+            let width = (label.len() as f32 * 7.0 + 32.0) * scale;
             let button_rect = Rect::from_center_size(
                 Pos2::new(x + width / 2.0, controls_y),
-                Vec2::new(width, 32.0),
+                Vec2::new(width, 32.0 * scale),
             );
             if ui
                 .put(
@@ -549,7 +550,7 @@ impl PongApp {
                     Action::None
                 };
             }
-            x += width + 6.0;
+            x += width + 6.0 * scale;
         }
         action
     }
@@ -605,33 +606,34 @@ impl PongApp {
 
 impl eframe::App for PongApp {
     fn update(&mut self, ctx: &Context, _frame: &mut eframe::Frame) {
-        let size = ctx.available_rect().size();
-        if self.screen == Screen::Game {
-            self.tick_game(ctx, size);
-        }
-
         let mut action = Action::None;
-        let background = if self.screen == Screen::Setup {
-            SETUP_BACKGROUND
-        } else {
-            BLACK
-        };
+        let mut game_size = Vec2::ZERO;
         egui::CentralPanel::default()
-            .frame(egui::Frame::none().fill(background))
+            .frame(egui::Frame::none().fill(BLACK))
             .show(ctx, |ui| {
                 let rect = ui.max_rect();
+                let game_rect = gameplay_rect(rect);
+                game_size = game_rect.size();
+                if self.screen == Screen::Game {
+                    self.tick_game(ctx, game_size);
+                }
+                let background = if self.screen == Screen::Setup {
+                    SETUP_BACKGROUND
+                } else {
+                    BLACK
+                };
                 ui.painter().rect_filled(rect, 0.0, background);
                 if self.screen == Screen::Game && self.settings.scanlines {
-                    draw_scanlines(ui.painter(), rect, ui.ctx().pixels_per_point());
+                    draw_scanlines(ui.painter(), game_rect, ui.ctx().pixels_per_point());
                 }
                 action = match self.screen {
                     Screen::Setup => self.draw_setup(ui, rect),
-                    Screen::Game => self.draw_game(ui, rect),
+                    Screen::Game => self.draw_game(ui, game_rect),
                 };
             });
 
         match action {
-            Action::Start => self.begin_match(size),
+            Action::Start => self.begin_match(game_size),
             Action::Setup => self.finish_match(),
             Action::TogglePause => {
                 if let Some(game) = self.game.as_mut() {
@@ -645,6 +647,11 @@ impl eframe::App for PongApp {
             ctx.request_repaint_after(Duration::from_millis(16));
         }
     }
+}
+
+fn gameplay_rect(rect: Rect) -> Rect {
+    let width = rect.width().min(rect.height() * 16.0 / 9.0);
+    Rect::from_center_size(rect.center(), Vec2::new(width, width * 9.0 / 16.0))
 }
 
 fn setting_title(id: SettingId) -> &'static str {
@@ -803,7 +810,8 @@ fn main() -> eframe::Result<()> {
         viewport: egui::ViewportBuilder::default()
             .with_title("Pong '76")
             .with_icon(icon)
-            .with_inner_size([800.0, 600.0]),
+            .with_inner_size([960.0, 540.0])
+            .with_min_inner_size([640.0, 480.0]),
         ..Default::default()
     };
     eframe::run_native(
@@ -823,5 +831,27 @@ mod joystick_tests {
         assert_eq!(gamepad_vertical_input(-0.8, false, false), 0.8);
         assert_eq!(gamepad_vertical_input(0.0, true, false), -1.0);
         assert_eq!(gamepad_vertical_input(0.0, false, true), 1.0);
+    }
+}
+
+#[cfg(test)]
+mod layout_tests {
+    use super::{gameplay_rect, Pos2, Rect, Vec2};
+
+    #[test]
+    fn gameplay_fits_and_centers_on_wide_tall_and_four_by_three_windows() {
+        for (window, expected) in [
+            (Vec2::new(1920.0, 1080.0), Vec2::new(1920.0, 1080.0)),
+            (Vec2::new(1080.0, 1920.0), Vec2::new(1080.0, 607.5)),
+            (Vec2::new(800.0, 600.0), Vec2::new(800.0, 450.0)),
+            (Vec2::new(2560.0, 1080.0), Vec2::new(1920.0, 1080.0)),
+        ] {
+            let bounds = Rect::from_min_size(Pos2::new(25.0, 40.0), window);
+            let game = gameplay_rect(bounds);
+            assert_eq!(game.size(), expected);
+            assert_eq!(game.center(), bounds.center());
+            assert_eq!(game.width() * 9.0, game.height() * 16.0);
+            assert!(bounds.contains_rect(game));
+        }
     }
 }

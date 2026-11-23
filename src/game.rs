@@ -175,6 +175,7 @@ impl Game {
         self.right_y *= height / self.height;
         self.ball_vx *= width / self.width;
         self.ball_vy *= height / self.height;
+        self.ball_speed *= width / self.width;
         self.width = width;
         self.height = height;
     }
@@ -492,5 +493,18 @@ mod tests {
         game.ball_y = 150.0;
         game.resize(1600.0, 1200.0);
         assert_eq!((game.ball_x, game.ball_y), (400.0, 300.0));
+    }
+
+    #[test]
+    fn resizing_scales_later_serves_as_well_as_the_current_ball() {
+        let settings = Settings::default();
+        let mut game = Game::new(&settings, 800.0, 600.0);
+        game.serve(&settings);
+        let initial_speed = game.ball_vx.hypot(game.ball_vy);
+        game.resize(1600.0, 1200.0);
+        assert!((game.ball_vx.hypot(game.ball_vy) - initial_speed * 2.0).abs() < 0.001);
+        game.reset_match(&settings);
+        game.serve(&settings);
+        assert!((game.ball_vx.hypot(game.ball_vy) - initial_speed * 2.0).abs() < 0.001);
     }
 }
