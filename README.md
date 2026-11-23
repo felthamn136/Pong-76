@@ -65,7 +65,8 @@ Enter to choose one player against the computer or two players. Player 1 uses
 A/Z and Player 2 uses O/L. The paddles, ball, and walls use ZX81 block graphics.
 The program reads the keyboard matrix directly so both paddles can be moved
 independently. First to 11 points with a two-point lead wins; type `RUN` to play
-again.
+again. The game updates only the changed screen cells for faster gameplay
+while keeping the display visible.
 
 The `.p` image starts automatically when loaded. Alternatively, enter the
 listing and type `RUN`; save it to tape with `SAVE "PONG76"`. Line 1 reserves
