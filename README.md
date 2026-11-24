@@ -6,7 +6,7 @@
 
 Pong '76 is an experimental Copilot AI-developed game inspired by the
 late-1970s Grandstand *Squash* consoles. It includes a Rust desktop game and
-ports for the ZX Spectrum 48K and expanded ZX81.
+a port for the ZX Spectrum 48K.
 
 ## Desktop game
 
@@ -33,21 +33,6 @@ cargo test
 If a network drive causes incremental compilation cache errors, use
 `CARGO_TARGET_DIR="$HOME/.cache/pong76-target" cargo run` (or `cargo test`).
 Linux packaging scripts expect the default `target` directory.
-
-## ZX81 version
-
-Load the auto-starting [ZX81 image](ports/zx81/pong76.p) on a ZX81 with 16K RAM.
-Choose `1` or `2` players and press Enter; player 1 uses A/Z and player 2 uses
-O/L. First to 11 with a two-point lead wins; type `RUN` to play again.
-
-The [BASIC listing](ports/zx81/pong76.bas) can also be entered manually. Keep
-the nine characters after `REM` on line 1 intact; lines 2–11 initialise the
-keyboard-reading machine code. Rebuild the image with
-[zmakebas with ZX81 support](https://github.com/ryangray/zmakebas):
-
-```bash
-zmakebas -p -a 2 -o ports/zx81/pong76.p ports/zx81/pong76.bas
-```
 
 ## ZX Spectrum 48K version
 
